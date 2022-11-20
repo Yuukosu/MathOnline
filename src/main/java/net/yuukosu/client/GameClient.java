@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
-import net.yuukosu.ChoiceSelector;
+import net.yuukosu.OptionSelector;
 import net.yuukosu.Game;
 import net.yuukosu.Utils;
 
@@ -24,6 +24,8 @@ public class GameClient {
     private BufferedWriter writer;
     @Getter
     private ClientGameStatus gameStatus;
+    @Getter
+    private boolean initialized;
     private boolean closed;
 
     public GameClient() {
@@ -39,6 +41,13 @@ public class GameClient {
             } catch (IOException ignored) {
             }
         }
+    }
+
+    private void init() {
+        ObjectNode node = Utils.getTemplate("SYSTEM", this.gameStatus.getUniqueId().toString());
+        node.put("A", "INIT");
+        node.put("B", Game.isDebug());
+        this.sendData(node.toString());
     }
 
     private void receive(String data) {
@@ -58,12 +67,24 @@ public class GameClient {
                     String a = node.get("A").asText();
 
                     if (a.equals("INIT")) {
-                        if (this.gameStatus != null) {
+                        if (this.initialized) {
                             this.error();
                             return;
                         }
 
                         this.gameStatus = new ClientGameStatus(UUID.fromString(uuid), this);
+
+                        if (node.get("B").asBoolean()) {
+                            this.gameStatus.allowDebug();
+                        }
+
+                        this.initialized = true;
+
+                        this.init();
+
+                        if (Game.isDebug() && !this.isAllowDebug()) {
+                            Game.print("※このサーバーではデバッグモードは許可されていません。", 3000);
+                        }
                     }
 
                     if (a.equals("END")) {
@@ -81,7 +102,7 @@ public class GameClient {
                             int currentProb = node.get("B").asInt();
                             int param1 = node.get("C").asInt();
                             int param2 = node.get("D").asInt();
-                            int answer = this.gameStatus.answer(currentProb, param1, param2);
+                            int answer = this.gameStatus.answer(currentProb, param1, param2, this.isAllowDebug() && this.gameStatus.getGameDebugger().isAutoPlay());
                             ObjectNode answerNode = Utils.getTemplate("GAME", this.gameStatus.getUniqueId().toString());
                             answerNode.put("A", "ANSWER");
                             answerNode.put("B", answer);
@@ -95,18 +116,20 @@ public class GameClient {
                         }
 
                         if (a.equals("RESULT")) {
-                            long b = node.get("B").asLong();
-                            int c = node.get("C").asInt();
-                            int d = node.get("D").asInt();
-                            String bFormat = new SimpleDateFormat("mm:ss").format(b);
-                            String cFormat = String.format("%,d", c);
-                            String dFormat = String.format("%,d", d);
+                            String evaluation = node.get("B").asText();
+                            long b = node.get("C").asLong();
+                            int c = node.get("D").asInt();
+                            int d = node.get("E").asInt();
+                            String cFormat = new SimpleDateFormat("mm:ss").format(b);
+                            String dFormat = String.format("%,d", c);
+                            String eFormat = String.format("%,d", d);
 
                             Game.print(
                                     "\n----- 結果 -----" +
-                                    "\nタイム: " + bFormat +
-                                    "\n正解した回数: " + cFormat +
-                                    "\n間違えた回数: " + dFormat +
+                                    "\n評価: " + evaluation +
+                                    "\nタイム: " + cFormat +
+                                    "\n正解した回数: " + dFormat +
+                                    "\n間違えた回数: " + eFormat +
                                     "\n---------------\n",
                                     5000
                             );
@@ -125,7 +148,7 @@ public class GameClient {
     }
 
     public void close() {
-        if (this.isClosed() && this.gameStatus != null) {
+        if (this.isClientClosed() && this.gameStatus != null) {
             ObjectNode node = Utils.getTemplate("SYSTEM", this.gameStatus.getUniqueId().toString());
             node.put("A", "END");
             this.sendData(node.toString());
@@ -158,7 +181,7 @@ public class GameClient {
     public void start(String host, int port) {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 
-        System.out.println("接続中...");
+        Game.print("接続中...", 0);
 
         try {
             this.socket.connect(new InetSocketAddress(host, port), 3000);
@@ -170,13 +193,23 @@ public class GameClient {
             return;
         }
 
-        String[] choices = {
+        String[] mainOptions = new String[]{
                 "ゲームを開始",
                 "切断する"
         };
-        ChoiceSelector selector = new ChoiceSelector(choices);
+        String[] debugMainOptions = new String[]{
+                "ゲームを開始",
+                "切断する",
+                "Debug Options"
+        };
+        String[] debugOptions = new String[]{
+                "Send Illegal Data",
+                "Toggle Auto Game",
+                "Back"
+        };
 
-        while (!this.isClosed()) {
+        int current = 0;
+        while (this.isClientClosed()) {
             try {
                 if (this.reader.ready()) {
                     String read = this.reader.readLine();
@@ -187,31 +220,75 @@ public class GameClient {
                 return;
             }
 
-            if (this.gameStatus != null) {
+            if (this.initialized) {
                 if (!this.gameStatus.isStarted()) {
-                    int select = selector.select(System.in, true);
+                    OptionSelector selector = new OptionSelector(Game.isDebug() && this.isAllowDebug() ? debugMainOptions : mainOptions);
+                    OptionSelector debugSelector = new OptionSelector(debugOptions);
+                    int select = current == 1 ? debugSelector.select(System.in, true) : selector.select(System.in, true);
+
                     switch (select) {
-                        case 0:
-                            this.gameStatus.startGame();
+                        case 0: {
+                            switch (current) {
+                                case 0: {
+                                    this.gameStatus.startGame();
+                                    break;
+                                }
+                                case 1: {
+                                    ObjectNode node = Utils.getTemplate("UNKNOWN");
+                                    this.sendData(node.toString());
+                                    Game.print("Sent.", 1000);
+                                    break;
+                                }
+                            }
+
                             break;
-                        case 1:
-                            this.close();
+                        }
+                        case 1: {
+                            switch (current) {
+                                case 0: {
+                                    this.close();
+                                    break;
+                                }
+                                case 1: {
+                                    this.gameStatus.getGameDebugger().setAutoPlay(!this.gameStatus.getGameDebugger().isAutoPlay());
+                                    Game.print("AutoPlay: " + this.gameStatus.getGameDebugger().isAutoPlay(), 1000);
+                                    break;
+                                }
+                            }
+
                             break;
+                        }
+                        case 2: {
+                            switch (current) {
+                                case 0:
+                                    current = 1;
+                                    break;
+                                case 1:
+                                    current = 0;
+                                    break;
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        System.out.println("Disconnected.");
+        System.out.println("切断しました。");
     }
 
-    public boolean isClosed() {
-        return this.socket.isClosed() && this.closed;
+    public boolean isClientClosed() {
+        return !this.socket.isClosed() || !this.closed;
+    }
+
+    public boolean isAllowDebug() {
+        return this.gameStatus.getGameDebugger() != null;
     }
 }

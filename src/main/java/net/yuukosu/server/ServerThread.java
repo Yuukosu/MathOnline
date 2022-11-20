@@ -21,6 +21,9 @@ public class ServerThread implements Runnable {
     @Getter
     private final ServerGameStatus gameStatus;
     @Getter
+    private boolean debugger;
+    @Getter
+    private boolean initialized;
     private boolean closed;
 
     public ServerThread(Socket socket) throws IOException {
@@ -44,6 +47,7 @@ public class ServerThread implements Runnable {
     private void init() {
         ObjectNode node = Utils.getTemplate("SYSTEM", this.gameStatus.getUniqueId().toString());
         node.put("A", "INIT");
+        node.put("B", Game.isDebug());
         this.sendData(node.toString());
     }
 
@@ -62,6 +66,20 @@ public class ServerThread implements Runnable {
 
                 if (type.equals("SYSTEM")) {
                     String a = node.get("A").asText();
+
+                    if (a.equals("INIT")) {
+                        if (this.initialized) {
+                            this.error();
+                            return;
+                        }
+
+                        this.debugger = node.get("B").asBoolean();
+                        this.initialized = true;
+
+                        if (this.debugger) {
+                            Game.printLog(this.socket.getInetAddress().getHostAddress() + " is debugger.");
+                        }
+                    }
 
                     if (a.equals("END")) {
                         this.close();
@@ -101,14 +119,14 @@ public class ServerThread implements Runnable {
                 }
             }
 
-            System.out.println("Dropped.");
+            Game.printLog("Dropped" + (this.getClientName() != null ? " -> " + this.getClientName() : "."));
         } catch (JsonProcessingException e) {
             this.error();
         }
     }
 
     public void close() {
-        if (!this.socket.isClosed() && !this.closed) {
+        if (this.isServerClosed()) {
             ObjectNode node = Utils.getTemplate("SYSTEM", this.gameStatus.getUniqueId().toString());
             node.put("A", "END");
             this.sendData(node.toString());
@@ -134,15 +152,29 @@ public class ServerThread implements Runnable {
     }
 
     public void error() {
-        System.out.println("エラーが発生しました。");
+        Game.printLog("エラーが発生しました。" + (this.getClientName() != null ? " -> " + this.getClientName() : ""));
         this.close();
+    }
+
+    public boolean isServerClosed() {
+        return !this.closed || !this.socket.isClosed();
+    }
+
+    public String getClientName() {
+        String name = null;
+
+        if (this.socket.isConnected()) {
+            name = this.socket.getInetAddress().getHostAddress() + (this.debugger ? " [DEBUGGER]" : "");
+        }
+
+        return name;
     }
 
     @Override
     public void run() {
         this.init();
 
-        while (!this.closed && !this.socket.isClosed()) {
+        while (this.isServerClosed()) {
             try {
                 if (this.reader.ready()) {
                     String read = this.reader.readLine();
@@ -154,12 +186,12 @@ public class ServerThread implements Runnable {
             }
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        System.out.println("Disconnected.");
+        Game.printLog("Disconnected" + (this.getClientName() != null ? " -> " + this.getClientName() : "."));
     }
 }

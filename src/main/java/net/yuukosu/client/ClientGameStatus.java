@@ -15,6 +15,8 @@ public class ClientGameStatus {
     @Getter
     private final GameClient gameClient;
     @Getter
+    private GameDebugger gameDebugger;
+    @Getter
     private boolean started;
 
     public ClientGameStatus(UUID uniqueId, GameClient gameClient) {
@@ -35,12 +37,22 @@ public class ClientGameStatus {
         this.started = false;
     }
 
-    public int answer(int problem, int param1, int param2) {
+    public void allowDebug() {
+        this.gameDebugger = new GameDebugger();
+    }
+
+    public int answer(int problem, int param1, int param2, boolean autoAnswer) {
         System.out.println("題" + problem + "問");
         int answer;
 
         while (true) {
             System.out.print(param1 + " + " + param2 + " = ");
+
+            if (autoAnswer) {
+                answer = param1 + param2;
+                System.out.println(answer);
+                break;
+            }
 
             try {
                 Scanner scanner = new Scanner(System.in);

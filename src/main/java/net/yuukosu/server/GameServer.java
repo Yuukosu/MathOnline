@@ -30,17 +30,17 @@ public class GameServer {
     public void start(int port) {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 
-        System.out.println("Starting Game Server...");
+        Game.printLog("Starting Game Server...");
 
         try {
             this.socket = ServerSocketFactory.getDefault().createServerSocket(port);
         } catch (IOException e) {
             this.close();
-            Game.print("サーバーの起動に失敗しました。", 1000);
+            Game.printLog("サーバーの起動に失敗しました。");
             return;
         }
 
-        System.out.println("Waiting For Connection...");
+        Game.printLog("Waiting For Connection...");
 
         while (!this.socket.isClosed()) {
             try {
@@ -52,10 +52,9 @@ public class GameServer {
 
                 this.serverThreads.add(serverThread);
 
-                System.out.println("New Connection -> " + this.socket.getInetAddress().getHostAddress());
+                Game.printLog("New Connection -> " + this.socket.getInetAddress().getHostAddress());
             } catch (IOException e) {
                 this.close();
-                Game.print("クライアントの受け入れに失敗しました。", 1000);
                 return;
             }
         }

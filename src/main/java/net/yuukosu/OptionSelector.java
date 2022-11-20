@@ -6,13 +6,13 @@ import java.io.InputStream;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-public class ChoiceSelector {
+public class OptionSelector {
 
     @Getter
-    private final String[] choices;
+    private final String[] options;
 
-    public ChoiceSelector(String[] choices) {
-        this.choices = choices;
+    public OptionSelector(String[] options) {
+        this.options = options;
     }
 
     public final int select(InputStream stream, boolean b) {
@@ -22,10 +22,10 @@ public class ChoiceSelector {
             Scanner scanner = new Scanner(stream);
 
             if (b) {
-                System.out.println("-------- Choices --------");
+                System.out.println("-------- Options --------");
 
-                for (int i = 0; i < this.choices.length; i++) {
-                    System.out.println((i + 1) + ". " + this.choices[i]);
+                for (int i = 0; i < this.options.length; i++) {
+                    System.out.println((i + 1) + ". " + this.options[i]);
                 }
 
                 System.out.println("-------------------------");
@@ -35,7 +35,7 @@ public class ChoiceSelector {
             try {
                 index = scanner.nextInt();
 
-                if (index <= 0 || index > choices.length) {
+                if (index <= 0 || index > this.options.length) {
                     if (b) {
                         System.out.println("正しい値を入力してください。");
                     }
@@ -54,9 +54,5 @@ public class ChoiceSelector {
         }
 
         return index - 1;
-    }
-
-    public String getChoice(int index) {
-        return this.choices[index];
     }
 }

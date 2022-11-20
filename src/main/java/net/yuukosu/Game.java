@@ -7,6 +7,9 @@ import net.yuukosu.client.GameClient;
 import net.yuukosu.server.GameServer;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -18,20 +21,26 @@ public class Game {
     private static final JsonMapper jsonMapper = new JsonMapper();
     @Getter
     private static final Random random = new Random();
+    @Getter
+    private static boolean debug = false;
 
     public static void main(String[] args) {
-        Game.showLogo();
+        Game.debug = Arrays.asList(args).contains("--debug");
 
-        String[] playChoices = {
+        if (!Game.debug) {
+            Game.showLogo();
+        }
+
+        String[] playOptions = {
                 "サーバーを開始する",
-                "ゲームで遊ぶ",
+                "サーバーに接続する",
                 "終了する"
         };
-        ChoiceSelector playSelector = new ChoiceSelector(playChoices);
+        OptionSelector selector = new OptionSelector(playOptions);
 
         loop:
         while (true) {
-            int play = playSelector.select(System.in, true);
+            int play = selector.select(System.in, true);
 
             switch (play) {
                 case 0: {
@@ -61,6 +70,11 @@ public class Game {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void printLog(String message) {
+        String format = new SimpleDateFormat("yy/MM/dd hh:mm:ss").format(new Date());
+        System.out.printf("[%s] %s\n", format, message);
     }
 
     private static String readHost() {
