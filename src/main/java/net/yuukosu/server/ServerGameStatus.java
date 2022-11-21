@@ -43,6 +43,8 @@ public class ServerGameStatus {
     public void start() {
         this.started = true;
         this.startTime = System.currentTimeMillis();
+        this.correctProblem = 0;
+        this.incorrectProblem = 0;
         this.currentProblem = 0;
         this.currentProblemAnswer = 0;
         this.next();
