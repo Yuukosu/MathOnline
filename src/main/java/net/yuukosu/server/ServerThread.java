@@ -9,6 +9,9 @@ import net.yuukosu.Utils;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ServerThread implements Runnable {
 
@@ -51,6 +54,19 @@ public class ServerThread implements Runnable {
         this.sendData(node.toString());
     }
 
+    private void initCheck(long timeout) {
+        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+
+        service.schedule(() -> {
+            if (!this.initialized) {
+                this.close();
+                Game.printLog("Initialize Timeout" + (this.getClientName() != null ? " -> " + this.getClientName() : "."));
+            }
+
+            service.shutdown();
+        }, timeout, TimeUnit.MILLISECONDS);
+    }
+
     private void receive(String data) {
         try {
             JsonNode node = Game.getJsonMapper().readTree(data);
@@ -77,7 +93,7 @@ public class ServerThread implements Runnable {
                         this.initialized = true;
 
                         if (this.debugger) {
-                            Game.printLog(this.socket.getInetAddress().getHostAddress() + " is debugger.");
+                            Game.printLog(this.socket.getInetAddress().getHostAddress() + " is a debugger.");
                         }
                     }
 
@@ -152,7 +168,7 @@ public class ServerThread implements Runnable {
     }
 
     public void error() {
-        Game.printLog("エラーが発生しました。" + (this.getClientName() != null ? " -> " + this.getClientName() : ""));
+        Game.printLog("An error occurred" + (this.getClientName() != null ? " -> " + this.getClientName() : ""));
         this.close();
     }
 
@@ -173,6 +189,7 @@ public class ServerThread implements Runnable {
     @Override
     public void run() {
         this.init();
+        this.initCheck(3000);
 
         while (this.isServerClosed()) {
             try {

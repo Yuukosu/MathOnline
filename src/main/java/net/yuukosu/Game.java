@@ -18,6 +18,8 @@ public class Game {
     @Getter
     public static final String version = "1.0";
     @Getter
+    public static final String author = "YuukosuDev";
+    @Getter
     private static final JsonMapper jsonMapper = new JsonMapper();
     @Getter
     private static final Random random = new Random();
@@ -25,7 +27,7 @@ public class Game {
     private static boolean debug = false;
 
     public static void main(String[] args) {
-        Game.debug = Arrays.asList(args).contains("--debug");
+        Game.debug = Arrays.asList(args).contains("--debug") || Arrays.asList(args).contains("-d");
 
         if (!Game.debug) {
             Game.showLogo();
@@ -92,7 +94,7 @@ public class Game {
 
     private static void showLogo() {
         try {
-            String art = FigletFont.convertOneLine("Math ONLINE") + " Math Online v" + Game.version + "\n";
+            String art = FigletFont.convertOneLine("Math ONLINE") + " Math Online v" + Game.version + "\n" + " Author: " + Game.author + "\n";
             Game.print(art, 3000);
         } catch (IOException e) {
             e.printStackTrace();

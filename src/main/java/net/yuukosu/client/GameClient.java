@@ -125,12 +125,12 @@ public class GameClient {
                             String eFormat = String.format("%,d", d);
 
                             Game.print(
-                                    "\n----- 結果 -----" +
+                                    "\n---------- 結果 ----------" +
                                     "\n評価: " + evaluation +
                                     "\nタイム: " + cFormat +
                                     "\n正解した回数: " + dFormat +
                                     "\n間違えた回数: " + eFormat +
-                                    "\n---------------\n",
+                                    "\n-------------------------\n",
                                     5000
                             );
                             this.gameStatus.end();
@@ -203,8 +203,7 @@ public class GameClient {
                 "Debug Options"
         };
         String[] debugOptions = new String[]{
-                "Send Illegal Data",
-                "Toggle Auto Game",
+                "Switch Auto Play",
                 "Back"
         };
 
@@ -234,9 +233,8 @@ public class GameClient {
                                     break;
                                 }
                                 case 1: {
-                                    ObjectNode node = Utils.getTemplate("UNKNOWN");
-                                    this.sendData(node.toString());
-                                    Game.print("Sent.", 1000);
+                                    this.gameStatus.getGameDebugger().setAutoPlay(!this.gameStatus.getGameDebugger().isAutoPlay());
+                                    Game.print("AutoPlay: " + this.gameStatus.getGameDebugger().isAutoPlay(), 1000);
                                     break;
                                 }
                             }
@@ -250,8 +248,7 @@ public class GameClient {
                                     break;
                                 }
                                 case 1: {
-                                    this.gameStatus.getGameDebugger().setAutoPlay(!this.gameStatus.getGameDebugger().isAutoPlay());
-                                    Game.print("AutoPlay: " + this.gameStatus.getGameDebugger().isAutoPlay(), 1000);
+                                    current = 0;
                                     break;
                                 }
                             }
@@ -259,13 +256,8 @@ public class GameClient {
                             break;
                         }
                         case 2: {
-                            switch (current) {
-                                case 0:
+                            if (current == 0) {
                                     current = 1;
-                                    break;
-                                case 1:
-                                    current = 0;
-                                    break;
                             }
 
                             break;

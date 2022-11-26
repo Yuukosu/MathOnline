@@ -71,13 +71,13 @@ public class ServerGameStatus {
 
         if (time <= (1000 * 60) && rate >= 100.0F) {
             evaluation = "S";
-        } else if (time <= (1000 * 60) && rate >= 50.0F) {
+        } else if (time <= (1000 * 60) && rate >= 75.0F) {
             evaluation = "A";
         } else if (time <= (1000 * 90) && rate >= 50.0F) {
             evaluation = "B";
         } else if (time <= (1000 * 120) && rate >= 30.0F) {
             evaluation = "C";
-        } else if (time <= (1000 * 180) && rate >= 30.0F) {
+        } else if (time <= (1000 * 180) && rate >= 15.0F) {
             evaluation = "D";
         } else {
             evaluation = "E";
