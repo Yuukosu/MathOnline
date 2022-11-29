@@ -52,7 +52,7 @@ public class GameServer {
 
                 this.serverThreads.add(serverThread);
 
-                Game.printLog("New Connection -> " + this.socket.getInetAddress().getHostAddress());
+                Game.printLog("New Connection -> " + client.getInetAddress().getHostAddress());
             } catch (IOException e) {
                 this.close();
                 return;

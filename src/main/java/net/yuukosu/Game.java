@@ -28,9 +28,18 @@ public class Game {
 
     public static void main(String[] args) {
         Game.debug = Arrays.asList(args).contains("--debug") || Arrays.asList(args).contains("-d");
+        boolean autoServer = Arrays.asList(args).contains("--server");
+
+        GameServer server = new GameServer();
+        GameClient client = new GameClient();
 
         if (!Game.debug) {
-            Game.showLogo();
+            Game.showBanner();
+        }
+
+        if (autoServer) {
+            server.start(11111);
+            return;
         }
 
         String[] playOptions = {
@@ -46,14 +55,12 @@ public class Game {
 
             switch (play) {
                 case 0: {
-                    GameServer server = new GameServer();
-                    server.start(18080);
+                    server.start(11111);
                     break;
                 }
                 case 1: {
-                    GameClient client = new GameClient();
                     String host = readHost();
-                    client.start(host, 18080);
+                    client.start(host, 11111);
                     break;
                 }
                 case 2: {
@@ -92,7 +99,7 @@ public class Game {
         return host;
     }
 
-    private static void showLogo() {
+    private static void showBanner() {
         try {
             String art = FigletFont.convertOneLine("Math ONLINE") + " Math Online v" + Game.version + "\n" + " Author: " + Game.author + "\n";
             Game.print(art, 3000);
