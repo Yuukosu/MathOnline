@@ -18,6 +18,8 @@ public class ServerThread implements Runnable {
     @Getter
     private final Socket socket;
     @Getter
+    private final GameOption gameOption;
+    @Getter
     private final BufferedReader reader;
     @Getter
     private final BufferedWriter writer;
@@ -31,6 +33,15 @@ public class ServerThread implements Runnable {
 
     public ServerThread(Socket socket) throws IOException {
         this.socket = socket;
+        this.gameOption = null;
+        this.reader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+        this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
+        this.gameStatus = new ServerGameStatus(this);
+    }
+
+    public ServerThread(Socket socket, GameOption gameOption) throws IOException {
+        this.socket = socket;
+        this.gameOption = gameOption;
         this.reader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
         this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
         this.gameStatus = new ServerGameStatus(this);

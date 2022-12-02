@@ -21,10 +21,11 @@ public class ServerGameStatus {
     @Setter
     @Getter
     private int maxProblems;
+    @Setter
+    @Getter
+    private int maxResults;
     @Getter
     private int correctProblem;
-    @Getter
-    private int incorrectProblem;
     @Getter
     private int currentProblem;
     @Getter
@@ -34,17 +35,23 @@ public class ServerGameStatus {
         this.uniqueId = UUID.randomUUID();
         this.serverThread = serverThread;
         this.maxProblems = 15;
+        this.maxResults = 10;
         this.correctProblem = 0;
-        this.incorrectProblem = 0;
         this.currentProblem = 0;
         this.currentProblemAnswer = 0;
+
+        GameOption option = serverThread.getGameOption();
+
+        if (option != null) {
+            this.maxProblems = option.getMaxProblems();
+            this.maxResults = option.getMaxResult();
+        }
     }
 
     public void start() {
         this.started = true;
         this.startTime = System.currentTimeMillis();
         this.correctProblem = 0;
-        this.incorrectProblem = 0;
         this.currentProblem = 0;
         this.currentProblemAnswer = 0;
         this.next();
@@ -58,8 +65,23 @@ public class ServerGameStatus {
 
         if (this.started) {
             this.currentProblem += 1;
-            this.serverThread.sendData(this.generateProblem(10));
+            this.nextProblem(this.maxResults);
         }
+    }
+
+    public void nextProblem(int maxResult) {
+        int sub = Math.max(Game.getRandom().nextInt(maxResult), 1);
+        int param1 = Math.min(Game.getRandom().nextInt(maxResult - sub) + 1, maxResult - sub);
+        int param2 = Math.min(Game.getRandom().nextInt(sub) + 1, sub);
+        this.currentProblemAnswer = param1 + param2;
+
+        ObjectNode node = Utils.getTemplate("GAME", this.uniqueId.toString());
+        node.put("A", "PROBLEM");
+        node.put("B", this.currentProblem);
+        node.put("C", param1);
+        node.put("D", param2);
+
+        this.serverThread.sendData(node.toString());
     }
 
     public void end() {
@@ -67,9 +89,9 @@ public class ServerGameStatus {
 
         String evaluation;
         long time = System.currentTimeMillis() - this.startTime;
-        float rate = 100.0F / (this.correctProblem + this.incorrectProblem) * this.correctProblem;
+        float rate = 100.0F / (this.correctProblem + this.getIncorrectProblems()) * this.correctProblem;
 
-        if (time <= (1000 * 60) && rate >= 100.0F) {
+        if (time <= (1000 * 30) && rate >= 100.0F) {
             evaluation = "S";
         } else if (time <= (1000 * 60) && rate >= 75.0F) {
             evaluation = "A";
@@ -88,24 +110,9 @@ public class ServerGameStatus {
         node.put("B", evaluation);
         node.put("C", time);
         node.put("D", this.correctProblem);
-        node.put("E", this.incorrectProblem);
+        node.put("E", this.getIncorrectProblems());
 
         this.serverThread.sendData(node.toString());
-    }
-
-    public String generateProblem(int max) {
-        int sub = Game.getRandom().nextInt(max);
-        int param1 = Math.min(Game.getRandom().nextInt(Math.max(max - sub, 1)) + 1, max);
-        int param2 = Math.min(Game.getRandom().nextInt(Math.max(sub, 1)) + 1, max);
-        this.currentProblemAnswer = param1 + param2;
-
-        ObjectNode node = Utils.getTemplate("GAME", this.uniqueId.toString());
-        node.put("A", "PROBLEM");
-        node.put("B", this.currentProblem);
-        node.put("C", param1);
-        node.put("D", param2);
-
-        return node.toString();
     }
 
     public boolean checkAnswer(int answer) {
@@ -113,10 +120,12 @@ public class ServerGameStatus {
 
         if (result) {
             this.correctProblem += 1;
-        } else {
-            this.incorrectProblem += 1;
         }
 
         return result;
+    }
+
+    private int getIncorrectProblems() {
+        return this.currentProblem - this.correctProblem;
     }
 }
