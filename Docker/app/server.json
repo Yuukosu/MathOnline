@@ -1,0 +1,6 @@
+{
+  "GAME": {
+    "MAX_PROBLEMS": 15,
+    "MAX_RESULT": 30
+  }
+}
