@@ -8,7 +8,7 @@
 Dockerディレクトリで `docker-compose up` を実行 or `java -jar MathOnline.jar -s` を実行
 
 ## サーバーに接続
-`java -jar MathOnline.jar` を実行して起動したら 2 を選択してサーバーのIPを入力
+`java -jar MathOnline.jar` を実行してアプリケーション起動したら 2 を選択して接続先のサーバーIPを入力して接続
 
 ## デバッグモード
 `java -jar MathOnline.jar -d` と実行するとデバッグモードの状態で起動できる。
@@ -19,3 +19,6 @@ Dockerディレクトリで `docker-compose up` を実行 or `java -jar MathOnli
 
 ### デバッグオプション一覧
 - Auto Play | 自動で問題を解いてくれる。
+
+## 必須
+- Java 11 or Higher
