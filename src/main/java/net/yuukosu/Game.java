@@ -27,17 +27,21 @@ public class Game {
     private static boolean debug = false;
 
     public static void main(String[] args) {
+        boolean help = Arrays.asList(args).contains("--help") || Arrays.asList(args).contains("-h");
         Game.debug = Arrays.asList(args).contains("--debug") || Arrays.asList(args).contains("-d");
-        boolean autoServer = Arrays.asList(args).contains("--server");
+        boolean autoServer = Arrays.asList(args).contains("--server") || Arrays.asList(args).contains("-s");
 
-        GameServer server = new GameServer();
-        GameClient client = new GameClient();
+        if (help) {
+            Game.printHelp();
+            return;
+        }
 
         if (!Game.debug) {
-            Game.showBanner();
+            Game.printBanner();
         }
 
         if (autoServer) {
+            GameServer server = new GameServer();
             server.start(11111);
             return;
         }
@@ -55,10 +59,12 @@ public class Game {
 
             switch (play) {
                 case 0: {
+                    GameServer server = new GameServer();
                     server.start(11111);
                     break;
                 }
                 case 1: {
+                    GameClient client = new GameClient();
                     String host = readHost();
                     client.start(host, 11111);
                     break;
@@ -99,7 +105,19 @@ public class Game {
         return host;
     }
 
-    private static void showBanner() {
+    private static void printHelp() {
+        String[] help = {
+                "---------- MathOnline Help ----------",
+                "Usage: java -jar MathOnline.jar (Args)",
+                " -h --help | Show Help.",
+                " -s --server | Start The Server.",
+                " -d --debug | Enable Debug Mode.",
+                "-------------------------------------"
+        };
+        Arrays.asList(help).forEach(System.out::println);
+    }
+
+    private static void printBanner() {
         try {
             String art = FigletFont.convertOneLine("Math ONLINE") + " Math Online v" + Game.version + "\n" + " Author: " + Game.author + "\n";
             Game.print(art, 3000);

@@ -15,6 +15,8 @@ public class GameServer {
     @Getter
     private ServerSocket socket;
     @Getter
+    private final ServerConfig config;
+    @Getter
     private final List<ServerThread> serverThreads;
 
     public GameServer() {
@@ -24,11 +26,24 @@ public class GameServer {
             e.printStackTrace();
         }
 
+        this.config = new ServerConfig("server.json");
         this.serverThreads = new ArrayList<>();
     }
 
     public void start(int port) {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+
+        GameOption gameOption = null;
+
+        if (this.config.isExists()) {
+            try {
+                Game.printLog("Loading " + this.config.getConfig().getName());
+                gameOption = new GameOption(this.config);
+            } catch (Exception e) {
+                Game.printLog("Failed to load " + this.config.getConfig().getName());
+                return;
+            }
+        }
 
         Game.printLog("Starting Game Server...");
 
@@ -45,7 +60,7 @@ public class GameServer {
         while (!this.socket.isClosed()) {
             try {
                 Socket client = this.socket.accept();
-                ServerThread serverThread = new ServerThread(client);
+                ServerThread serverThread = new ServerThread(client, gameOption);
 
                 Thread thread = new Thread(serverThread);
                 thread.start();
